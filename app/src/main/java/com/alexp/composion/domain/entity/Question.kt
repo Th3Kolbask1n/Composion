@@ -7,4 +7,9 @@ data class Question (
     )
 
 {
+
+
+    val rightAnswer : Int
+        get() = sum - visibleNumber
+
 }
