@@ -5,9 +5,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.alexp.composion.R
 import com.alexp.composion.databinding.FragmentWelcomeBinding
-import ru.sumin.composition.presentation.ChooseLevelFragment
+import com.alexp.composion.presentation.ChooseLevelFragment
 
 class WelcomeFragment : Fragment() {
 
@@ -37,9 +38,6 @@ class WelcomeFragment : Fragment() {
 
     private fun launchChooseLevelFragment()
     {
-        requireActivity().supportFragmentManager.beginTransaction()
-            .replace(R.id.main_container,ChooseLevelFragment.newInstance())
-            .addToBackStack(ChooseLevelFragment.NAME)
-            .commit()
+     findNavController().navigate(R.id.action_welcomeFragment_to_chooseLevelFragment)
     }
 }

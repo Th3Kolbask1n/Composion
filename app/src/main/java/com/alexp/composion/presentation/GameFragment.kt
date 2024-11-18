@@ -12,29 +12,37 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.*
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.alexp.composion.R
 import com.alexp.composion.databinding.FragmentGameBinding
 import com.alexp.composion.domain.entity.GameResult
 import com.alexp.composion.domain.entity.GameSettings
 import com.alexp.composion.domain.entity.Level
 import com.alexp.composion.presentationT20Widget.GameViewModel
-import ru.sumin.composition.presentation.ChooseLevelFragment
+import com.alexp.composion.presentation.ChooseLevelFragment
 
 class GameFragment : Fragment() {
 
-    private var  _binding : FragmentGameBinding? = null
+    private val args by navArgs<GameFragmentArgs>()
+    private var _binding: FragmentGameBinding? = null
     private val binding: FragmentGameBinding
-        get() = _binding?: throw RuntimeException("GameFragment is null")
+        get() = _binding ?: throw RuntimeException("GameFragment is null")
 
-    private lateinit var level: Level
+    private val viewModelFactory by lazy {
+        GameViewModelFactory(
+            args.level,
+            requireActivity().application
+        )
+    }
     private val viewModel: GameViewModel by lazy {
-        ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory
-            .getInstance(requireActivity().application))[GameViewModel::class.java]
+        ViewModelProvider(
+            this, viewModelFactory
+        )[GameViewModel::class.java]
     }
 
 
-
-    private val tvOptions by lazy{
+    private val tvOptions by lazy {
         mutableListOf<TextView>().apply {
 
             add(binding.tvOption1)
@@ -52,43 +60,40 @@ class GameFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        _binding = FragmentGameBinding.inflate(inflater,container,false)
+        _binding = FragmentGameBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewModel.startGame(level)
         setClickListenersToOptions()
         observerViewModel()
     }
 
-    private fun setClickListenersToOptions()
-    {
-        for(tvOption in tvOptions)
-        {
+    private fun setClickListenersToOptions() {
+        for (tvOption in tvOptions) {
             tvOption.setOnClickListener {
                 viewModel.chooseAnswer(tvOption.text.toString().toInt())
             }
         }
     }
-    private fun observerViewModel()
-    {
-        
-        viewModel.question.observe(viewLifecycleOwner){
+
+    private fun observerViewModel() {
+
+        viewModel.question.observe(viewLifecycleOwner) {
             binding.tvSum.text = it.sum.toString()
             binding.tvLeftNumber.text = it.visibleNumber.toString()
 
-            Log.d("TvOptions",it.options.toString())
+            Log.d("TvOptions", it.options.toString())
 
-            for(i in 0 until tvOptions.size) {
+            for (i in 0 until tvOptions.size) {
                 tvOptions[i].text = it.options[i].toString()
             }
 
         }
 
-        viewModel.percentOfRightAnswers.observe(viewLifecycleOwner){
-            binding.progressBar.setProgress(it,true)
+        viewModel.percentOfRightAnswers.observe(viewLifecycleOwner) {
+            binding.progressBar.setProgress(it, true)
         }
 
         viewModel.enoughtCountOfRightAnswers.observe(viewLifecycleOwner)
@@ -107,72 +112,44 @@ class GameFragment : Fragment() {
         {
             binding.tvTimer.text = it
         }
-        viewModel.minPercent.observe(viewLifecycleOwner){
+        viewModel.minPercent.observe(viewLifecycleOwner) {
             binding.progressBar.secondaryProgress = it
         }
         viewModel.gameResult.observe(viewLifecycleOwner)
         {
+            Log.d("finished", "25")
             launchGameFinishedFragment(it)
         }
         viewModel.progressAnswers.observe(viewLifecycleOwner)
         {
-             binding.tvAnswersProgress.text = it
+            binding.tvAnswersProgress.text = it
 
         }
     }
 
-    private fun getColorIdByState(goodState:Boolean): Int
-    {
-        val colorResId = if(goodState)
-        {
+    private fun getColorIdByState(goodState: Boolean): Int {
+        val colorResId = if (goodState) {
             android.R.color.holo_green_light
-        }
-        else{
+        } else {
             android.R.color.holo_red_light
         }
-        return ContextCompat.getColor(requireContext(),colorResId)
+        return ContextCompat.getColor(requireContext(), colorResId)
     }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        parseArgs()
-    }
+
+
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 
-    private fun parseArgs()
-    {
-        requireArguments().getParcelable(KEY_LEVEL,Level::class.java)?.let {
-            level = it
-        }
+
+    private fun launchGameFinishedFragment(gameResult: GameResult) {
+
+        findNavController().navigate(
+            GameFragmentDirections.actionGameFragmentToGameFinishedFragment2(gameResult))
     }
 
-    private fun launchGameFinishedFragment(gameResult: GameResult)
-    {
-        requireActivity().supportFragmentManager.popBackStack()
-
-        requireActivity().supportFragmentManager
-            .beginTransaction()
-            .replace(R.id.main_container, GameFinishedFragment.newInstance(gameResult))
-            .addToBackStack(null)
-            .commit()
-
-    }
-    companion object
-    {
-        private const val KEY_LEVEL = "level"
-        fun newIntent(level: Level):GameFragment
-        {
-            return GameFragment().apply {
-                arguments = Bundle().apply {
-                    putParcelable(KEY_LEVEL,level)
-                }
-            }
-        }
-
-    }
 
 
 }
